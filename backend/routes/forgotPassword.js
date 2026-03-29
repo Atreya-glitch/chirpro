@@ -5,15 +5,6 @@ const { sendPasswordResetEmail } = require("../utils/email");
 
 const router = express.Router();
 
-/**
- * POST /api/forgot-password/request
- * Accepts { identifier } — either an email address or phone number.
- * Rules:
- *  - Once per day limit (checked via passwordReset.lastRequestDate)
- *  - Generates a letters-only password
- *  - Sends the new password by email
- *  - Saves hashed new password to DB
- */
 router.post("/request", async (req, res) => {
   try {
     const { identifier } = req.body;
@@ -21,13 +12,13 @@ router.post("/request", async (req, res) => {
     if (!identifier || identifier.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: "Please provide your registered email address or phone number.",
+        message:
+          "Please provide your registered email address or phone number.",
       });
     }
 
     const trimmed = identifier.trim().toLowerCase();
 
-    // Detect whether input looks like an email or phone
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
     const isPhone = /^[\d\s\+\-\(\)]{7,15}$/.test(identifier.trim());
 
@@ -38,20 +29,16 @@ router.post("/request", async (req, res) => {
       });
     }
 
-    // Find user by email or phone
     let user;
     if (isEmail) {
       user = await User.findOne({ email: trimmed });
     } else {
-      // Normalize phone: strip all non-digit characters for comparison
       const digitsOnly = identifier.trim().replace(/\D/g, "");
       user = await User.findOne({
-        phone: { $regex: digitsOnly.slice(-10) }, // match last 10 digits
+        phone: { $regex: digitsOnly.slice(-10) },
       });
     }
 
-    // Always respond with a generic success message even if user not found
-    // This prevents user enumeration attacks
     if (!user) {
       return res.status(200).json({
         success: true,
@@ -60,7 +47,6 @@ router.post("/request", async (req, res) => {
       });
     }
 
-    // ── Once-per-day limit check ──────────────────────────────────────────
     if (!user.canRequestPasswordReset()) {
       return res.status(429).json({
         success: false,
@@ -70,10 +56,8 @@ router.post("/request", async (req, res) => {
       });
     }
 
-    // ── Generate letters-only password ────────────────────────────────────
     const newPassword = generateLetterPassword(12);
 
-    // ── Send email with new password ──────────────────────────────────────
     const emailResult = await sendPasswordResetEmail({
       userEmail: user.email,
       userName: user.name,
@@ -88,8 +72,7 @@ router.post("/request", async (req, res) => {
       });
     }
 
-    // ── Save new hashed password + update rate-limit date ─────────────────
-    user.password = newPassword; // pre-save hook will hash it
+    user.password = newPassword;
     user.passwordReset.lastRequestDate = new Date();
     user.passwordReset.token = null;
     user.passwordReset.tokenExpiry = null;
@@ -110,11 +93,6 @@ router.post("/request", async (req, res) => {
   }
 });
 
-/**
- * GET /api/forgot-password/check-limit
- * Lets the frontend check if the user has already used their reset today.
- * Accepts query param: ?identifier=<email or phone>
- */
 router.get("/check-limit", async (req, res) => {
   try {
     const { identifier } = req.query;

@@ -5,26 +5,32 @@ const { protect } = require("../middleware/auth");
 
 const router = express.Router();
 
-// @route   POST /api/tweets
-// Post a new tweet (checks subscription limit)
 router.post("/", protect, async (req, res) => {
   try {
     const { content } = req.body;
 
     if (!content || content.trim() === "") {
-      return res.status(400).json({ success: false, message: "Tweet content cannot be empty" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Tweet content cannot be empty" });
     }
 
     if (content.length > 280) {
-      return res.status(400).json({ success: false, message: "Tweet cannot exceed 280 characters" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Tweet cannot exceed 280 characters",
+        });
     }
 
     const user = await User.findById(req.user._id);
 
-    // Check subscription tweet limit
     if (!user.canPost()) {
       const limit = user.getTweetLimit();
-      const planName = user.subscription.plan.charAt(0).toUpperCase() + user.subscription.plan.slice(1);
+      const planName =
+        user.subscription.plan.charAt(0).toUpperCase() +
+        user.subscription.plan.slice(1);
       return res.status(403).json({
         success: false,
         message: `You've reached your tweet limit (${limit} tweets) for the ${planName} plan. Please upgrade your subscription to post more tweets.`,
@@ -39,18 +45,23 @@ router.post("/", protect, async (req, res) => {
       content: content.trim(),
     });
 
-    // Increment tweet count
     user.tweetCount += 1;
     await user.save();
 
-    const populatedTweet = await Tweet.findById(tweet._id).populate("user", "name email subscription.plan");
+    const populatedTweet = await Tweet.findById(tweet._id).populate(
+      "user",
+      "name email subscription.plan",
+    );
 
     res.status(201).json({
       success: true,
       tweet: populatedTweet,
       tweetCount: user.tweetCount,
       tweetLimit: user.getTweetLimit(),
-      remainingTweets: user.getTweetLimit() === Infinity ? "Unlimited" : user.getTweetLimit() - user.tweetCount,
+      remainingTweets:
+        user.getTweetLimit() === Infinity
+          ? "Unlimited"
+          : user.getTweetLimit() - user.tweetCount,
     });
   } catch (error) {
     console.error("Post tweet error:", error);
@@ -58,8 +69,6 @@ router.post("/", protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/tweets
-// Get all tweets (feed)
 router.get("/", protect, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -85,8 +94,6 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// @route   GET /api/tweets/my
-// Get current user's tweets
 router.get("/my", protect, async (req, res) => {
   try {
     const tweets = await Tweet.find({ user: req.user._id })
@@ -95,24 +102,32 @@ router.get("/my", protect, async (req, res) => {
 
     res.json({ success: true, tweets, count: tweets.length });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch your tweets" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch your tweets" });
   }
 });
 
-// @route   DELETE /api/tweets/:id
 router.delete("/:id", protect, async (req, res) => {
   try {
     const tweet = await Tweet.findById(req.params.id);
 
-    if (!tweet) return res.status(404).json({ success: false, message: "Tweet not found" });
+    if (!tweet)
+      return res
+        .status(404)
+        .json({ success: false, message: "Tweet not found" });
 
     if (tweet.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: "Not authorized to delete this tweet" });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Not authorized to delete this tweet",
+        });
     }
 
     await tweet.deleteOne();
 
-    // Decrement tweet count
     await User.findByIdAndUpdate(req.user._id, { $inc: { tweetCount: -1 } });
 
     res.json({ success: true, message: "Tweet deleted successfully" });

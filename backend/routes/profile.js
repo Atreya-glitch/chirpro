@@ -5,10 +5,6 @@ const { protect } = require("../middleware/auth");
 
 const router = express.Router();
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/profile
-// Returns full profile data including notification preferences
-// ─────────────────────────────────────────────────────────────────────────────
 router.get("/", protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -34,11 +30,6 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/profile/notifications
-// Update notification preferences (enabled toggle + keywords list)
-// Body: { enabled: boolean, keywords: string[] }
-// ─────────────────────────────────────────────────────────────────────────────
 router.patch("/notifications", protect, async (req, res) => {
   try {
     const { enabled, keywords } = req.body;
@@ -49,23 +40,26 @@ router.patch("/notifications", protect, async (req, res) => {
     }
 
     if (Array.isArray(keywords)) {
-      // Sanitise: lowercase, trim, remove empty, deduplicate, max 20 keywords
-      const cleaned = [...new Set(
-        keywords
-          .map((k) => k.toString().trim().toLowerCase())
-          .filter((k) => k.length > 0 && k.length <= 50)
-      )].slice(0, 20);
+      const cleaned = [
+        ...new Set(
+          keywords
+            .map((k) => k.toString().trim().toLowerCase())
+            .filter((k) => k.length > 0 && k.length <= 50),
+        ),
+      ].slice(0, 20);
       update["notificationPreferences.keywords"] = cleaned;
     }
 
     if (Object.keys(update).length === 0) {
-      return res.status(400).json({ success: false, message: "No valid fields to update" });
+      return res
+        .status(400)
+        .json({ success: false, message: "No valid fields to update" });
     }
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { $set: update },
-      { new: true }
+      { new: true },
     ).select("notificationPreferences");
 
     res.json({
@@ -75,7 +69,9 @@ router.patch("/notifications", protect, async (req, res) => {
     });
   } catch (err) {
     console.error("Update notifications error:", err);
-    res.status(500).json({ success: false, message: "Failed to update preferences" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update preferences" });
   }
 });
 

@@ -5,16 +5,21 @@ const path = require("path");
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
-const authRoutes            = require("./routes/auth");
-const paymentRoutes         = require("./routes/payment");
-const tweetRoutes           = require("./routes/tweets");
-const forgotPasswordRoutes  = require("./routes/forgotPassword");
-const audioTweetRoutes      = require("./routes/audioTweets");
-const profileRoutes         = require("./routes/profile");
+const authRoutes = require("./routes/auth");
+const paymentRoutes = require("./routes/payment");
+const tweetRoutes = require("./routes/tweets");
+const forgotPasswordRoutes = require("./routes/forgotPassword");
+const audioTweetRoutes = require("./routes/audioTweets");
+const profileRoutes = require("./routes/profile");
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:3000", credentials: true }));
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -25,12 +30,12 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api/auth",            authRoutes);
-app.use("/api/payment",         paymentRoutes);
-app.use("/api/tweets",          tweetRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/tweets", tweetRoutes);
 app.use("/api/forgot-password", forgotPasswordRoutes);
-app.use("/api/audio-tweets",    audioTweetRoutes);
-app.use("/api/profile",         profileRoutes);
+app.use("/api/audio-tweets", audioTweetRoutes);
+app.use("/api/profile", profileRoutes);
 
 app.get("/api/health", (req, res) => {
   const now = new Date();
@@ -70,7 +75,9 @@ app.use((err, req, res, next) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: `Route ${req.path} not found` });
+  res
+    .status(404)
+    .json({ success: false, message: `Route ${req.path} not found` });
 });
 
 const PORT = process.env.PORT || 5000;

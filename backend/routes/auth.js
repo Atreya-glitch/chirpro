@@ -3,19 +3,20 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const LoginSession = require("../models/LoginSession");
 const { protect } = require("../middleware/auth");
-const { parseUserAgent, isMobileLoginWindowOpen, getClientIP } = require("../utils/uaParser");
+const {
+  parseUserAgent,
+  isMobileLoginWindowOpen,
+  getClientIP,
+} = require("../utils/uaParser");
 const { sendOtpEmail } = require("../utils/email");
 
 const router = express.Router();
 
-const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+const generateToken = (id) =>
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
-/** Generates a cryptographically-random 6-digit OTP */
 const generateOTP = () => String(Math.floor(100000 + Math.random() * 900000));
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/auth/register
-// ─────────────────────────────────────────────────────────────────────────────
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
@@ -23,10 +24,14 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
 
     if (await User.findOne({ email }))
-      return res.status(400).json({ message: "User already exists with this email" });
+      return res
+        .status(400)
+        .json({ message: "User already exists with this email" });
 
     const user = await User.create({
-      name, email, password,
+      name,
+      email,
+      password,
       phone: phone || undefined,
       subscription: { plan: "free", status: "active" },
     });
@@ -35,8 +40,11 @@ router.post("/register", async (req, res) => {
       success: true,
       message: "Account created successfully",
       user: {
-        id: user._id, name: user.name, email: user.email,
-        subscription: user.subscription, tweetCount: user.tweetCount,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        subscription: user.subscription,
+        tweetCount: user.tweetCount,
         tweetLimit: user.getTweetLimit(),
       },
       token: generateToken(user._id),
@@ -47,74 +55,82 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/auth/login
-// Logic:
-//   1. Parse UA → browser, OS, device category, IP
-//   2. Validate credentials
-//   3a. Mobile outside 10 AM–1 PM IST → block
-//   3b. Chrome → issue OTP, return { requiresOtp: true, sessionId }
-//   3c. Microsoft browser (Edge/IE) → direct login, no OTP
-//   3d. Other browsers → direct login
-//   4. Save LoginSession in all cases
-// ─────────────────────────────────────────────────────────────────────────────
 router.post("/login", async (req, res) => {
   const ua = req.headers["user-agent"] || "";
   const ip = getClientIP(req);
-  const { browser, browserFamily, os, device, deviceCategory } = parseUserAgent(ua);
+  const { browser, browserFamily, os, device, deviceCategory } =
+    parseUserAgent(ua);
 
   try {
     const { email, password } = req.body;
     if (!email || !password)
-      return res.status(400).json({ message: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
 
     const user = await User.findOne({ email });
 
-    // Wrong credentials
     if (!user || !(await user.matchPassword(password))) {
-      // Log failed attempt
       await LoginSession.create({
         user: user?._id || new (require("mongoose").Types.ObjectId)(),
-        browser, browserFamily, os, device, deviceCategory,
-        ipAddress: ip, userAgent: ua, status: "failed",
+        browser,
+        browserFamily,
+        os,
+        device,
+        deviceCategory,
+        ipAddress: ip,
+        userAgent: ua,
+        status: "failed",
       }).catch(() => {});
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // ── Rule 1: Mobile time-window restriction ──────────────────────────────
     if (deviceCategory === "mobile" && !isMobileLoginWindowOpen()) {
       const session = await LoginSession.create({
-        user: user._id, browser, browserFamily, os, device, deviceCategory,
-        ipAddress: ip, userAgent: ua, status: "blocked_mobile",
+        user: user._id,
+        browser,
+        browserFamily,
+        os,
+        device,
+        deviceCategory,
+        ipAddress: ip,
+        userAgent: ua,
+        status: "blocked_mobile",
       });
 
-      // IST time info for client
       const now = new Date();
       const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-      const currentIST = `${ist.getUTCHours().toString().padStart(2,"0")}:${ist.getUTCMinutes().toString().padStart(2,"0")} IST`;
+      const currentIST = `${ist.getUTCHours().toString().padStart(2, "0")}:${ist.getUTCMinutes().toString().padStart(2, "0")} IST`;
 
       return res.status(403).json({
         success: false,
         blockedMobile: true,
-        message: "Mobile login is only allowed between 10:00 AM and 1:00 PM IST.",
+        message:
+          "Mobile login is only allowed between 10:00 AM and 1:00 PM IST.",
         currentIST,
         allowedWindow: "10:00 AM – 1:00 PM IST",
         sessionId: session._id,
       });
     }
 
-    // ── Rule 2: Chrome → OTP flow ───────────────────────────────────────────
     if (browserFamily === "chrome") {
       const otp = generateOTP();
-      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
       const session = await LoginSession.create({
-        user: user._id, browser, browserFamily, os, device, deviceCategory,
-        ipAddress: ip, userAgent: ua,
-        status: "otp_pending", otp, otpExpiry,
+        user: user._id,
+        browser,
+        browserFamily,
+        os,
+        device,
+        deviceCategory,
+        ipAddress: ip,
+        userAgent: ua,
+        status: "otp_pending",
+        otp,
+        otpExpiry,
       });
 
-      // Fire & forget — don't block response if email fails in dev
       sendOtpEmail({
         userEmail: user.email,
         userName: user.name,
@@ -129,17 +145,22 @@ router.post("/login", async (req, res) => {
         requiresOtp: true,
         sessionId: session._id,
         message: `An OTP has been sent to ${user.email}. Please verify to complete login.`,
-        email: user.email.replace(/(.{2}).+(@.+)/, "$1***$2"), // partially mask
+        email: user.email.replace(/(.{2}).+(@.+)/, "$1***$2"),
       });
     }
 
-    // ── Rule 3: Microsoft browsers (Edge / IE) → direct login ──────────────
-    // Rule 4: All other browsers → direct login
     const isMicrosoft = browserFamily === "edge" || browserFamily === "ie";
 
     const session = await LoginSession.create({
-      user: user._id, browser, browserFamily, os, device, deviceCategory,
-      ipAddress: ip, userAgent: ua, status: "success",
+      user: user._id,
+      browser,
+      browserFamily,
+      os,
+      device,
+      deviceCategory,
+      ipAddress: ip,
+      userAgent: ua,
+      status: "success",
     });
 
     return res.json({
@@ -150,8 +171,11 @@ router.post("/login", async (req, res) => {
         ? "Logged in via Microsoft browser — no additional verification required."
         : "Logged in successfully.",
       user: {
-        id: user._id, name: user.name, email: user.email,
-        subscription: user.subscription, tweetCount: user.tweetCount,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        subscription: user.subscription,
+        tweetCount: user.tweetCount,
         tweetLimit: user.getTweetLimit(),
       },
       token: generateToken(user._id),
@@ -163,33 +187,44 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/auth/verify-otp
-// Verifies the 6-digit OTP for Chrome users and returns JWT on success.
-// ─────────────────────────────────────────────────────────────────────────────
 router.post("/verify-otp", async (req, res) => {
   try {
     const { sessionId, otp } = req.body;
     if (!sessionId || !otp)
-      return res.status(400).json({ message: "Session ID and OTP are required" });
+      return res
+        .status(400)
+        .json({ message: "Session ID and OTP are required" });
 
     const session = await LoginSession.findById(sessionId).populate("user");
     if (!session)
-      return res.status(404).json({ message: "Session not found. Please log in again." });
+      return res
+        .status(404)
+        .json({ message: "Session not found. Please log in again." });
 
     if (session.status !== "otp_pending")
-      return res.status(400).json({ message: "This session is not awaiting OTP verification." });
+      return res
+        .status(400)
+        .json({ message: "This session is not awaiting OTP verification." });
 
     if (new Date() > session.otpExpiry)
-      return res.status(410).json({ otpExpired: true, message: "OTP has expired. Please log in again." });
+      return res
+        .status(410)
+        .json({
+          otpExpired: true,
+          message: "OTP has expired. Please log in again.",
+        });
 
     if (session.otp !== otp.trim())
-      return res.status(401).json({ invalidOtp: true, message: "Incorrect OTP. Please try again." });
+      return res
+        .status(401)
+        .json({
+          invalidOtp: true,
+          message: "Incorrect OTP. Please try again.",
+        });
 
-    // Mark session as verified
     session.status = "otp_verified";
     session.otpVerifiedAt = new Date();
-    session.otp = null; // clear after use
+    session.otp = null;
     await session.save();
 
     const user = session.user;
@@ -198,14 +233,19 @@ router.post("/verify-otp", async (req, res) => {
       success: true,
       message: "OTP verified successfully. Welcome!",
       user: {
-        id: user._id, name: user.name, email: user.email,
-        subscription: user.subscription, tweetCount: user.tweetCount,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        subscription: user.subscription,
+        tweetCount: user.tweetCount,
         tweetLimit: user.getTweetLimit(),
       },
       token: generateToken(user._id),
       sessionInfo: {
-        browser: session.browser, os: session.os,
-        device: session.device, ip: session.ipAddress,
+        browser: session.browser,
+        os: session.os,
+        device: session.device,
+        ip: session.ipAddress,
         sessionId: session._id,
       },
     });
@@ -215,16 +255,15 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/auth/resend-otp
-// ─────────────────────────────────────────────────────────────────────────────
 router.post("/resend-otp", async (req, res) => {
   try {
     const { sessionId } = req.body;
     const session = await LoginSession.findById(sessionId).populate("user");
 
     if (!session || session.status !== "otp_pending")
-      return res.status(400).json({ message: "Invalid session for OTP resend." });
+      return res
+        .status(400)
+        .json({ message: "Invalid session for OTP resend." });
 
     const newOtp = generateOTP();
     session.otp = newOtp;
@@ -240,33 +279,33 @@ router.post("/resend-otp", async (req, res) => {
       device: session.device,
     });
 
-    return res.json({ success: true, message: "A new OTP has been sent to your email." });
+    return res.json({
+      success: true,
+      message: "A new OTP has been sent to your email.",
+    });
   } catch (error) {
     console.error("Resend OTP error:", error);
     res.status(500).json({ message: "Failed to resend OTP." });
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/auth/me
-// ─────────────────────────────────────────────────────────────────────────────
 router.get("/me", protect, async (req, res) => {
   const user = req.user;
   res.json({
     success: true,
     user: {
-      id: user._id, name: user.name, email: user.email,
-      subscription: user.subscription, tweetCount: user.tweetCount,
-      tweetLimit: user.getTweetLimit(), canPost: user.canPost(),
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      subscription: user.subscription,
+      tweetCount: user.tweetCount,
+      tweetLimit: user.getTweetLimit(),
+      canPost: user.canPost(),
       notificationPreferences: user.notificationPreferences,
     },
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/auth/login-history
-// Returns last 20 login sessions for the logged-in user
-// ─────────────────────────────────────────────────────────────────────────────
 router.get("/login-history", protect, async (req, res) => {
   try {
     const sessions = await LoginSession.find({ user: req.user._id })

@@ -56,13 +56,12 @@ const userSchema = new mongoose.Schema(
     },
     notificationPreferences: {
       enabled: { type: Boolean, default: true },
-      keywords: { type: [String], default: ['cricket', 'science'] },
+      keywords: { type: [String], default: ["cricket", "science"] },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(12);
@@ -70,12 +69,10 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Compare password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Get tweet limit based on plan
 userSchema.methods.getTweetLimit = function () {
   const limits = {
     free: 1,
@@ -86,14 +83,12 @@ userSchema.methods.getTweetLimit = function () {
   return limits[this.subscription.plan] || 1;
 };
 
-// Check if user can post a tweet
 userSchema.methods.canPost = function () {
   const limit = this.getTweetLimit();
   if (limit === Infinity) return true;
   return this.tweetCount < limit;
 };
 
-// Check if user can request a password reset today (once per day)
 userSchema.methods.canRequestPasswordReset = function () {
   if (!this.passwordReset.lastRequestDate) return true;
   const last = new Date(this.passwordReset.lastRequestDate);

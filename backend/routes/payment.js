@@ -11,7 +11,7 @@ const router = express.Router();
 const PLANS = {
   bronze: { name: "Bronze Plan", amount: 100, tweets: 3 },
   silver: { name: "Silver Plan", amount: 300, tweets: 5 },
-  gold:   { name: "Gold Plan",   amount: 1000, tweets: "Unlimited" },
+  gold: { name: "Gold Plan", amount: 1000, tweets: "Unlimited" },
 };
 
 const razorpay = new Razorpay({
@@ -19,16 +19,32 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// @route   GET /api/payment/plans
-// Returns all available plans (public)
 router.get("/plans", (req, res) => {
   res.json({
     success: true,
     plans: [
-      { id: "free",   name: "Free Plan",   price: 0,    tweets: 1,           currency: "INR" },
-      { id: "bronze", name: "Bronze Plan", price: 100,  tweets: 3,           currency: "INR" },
-      { id: "silver", name: "Silver Plan", price: 300,  tweets: 5,           currency: "INR" },
-      { id: "gold",   name: "Gold Plan",   price: 1000, tweets: "Unlimited", currency: "INR" },
+      { id: "free", name: "Free Plan", price: 0, tweets: 1, currency: "INR" },
+      {
+        id: "bronze",
+        name: "Bronze Plan",
+        price: 100,
+        tweets: 3,
+        currency: "INR",
+      },
+      {
+        id: "silver",
+        name: "Silver Plan",
+        price: 300,
+        tweets: 5,
+        currency: "INR",
+      },
+      {
+        id: "gold",
+        name: "Gold Plan",
+        price: 1000,
+        tweets: "Unlimited",
+        currency: "INR",
+      },
     ],
     paymentWindow: {
       start: "10:00 AM IST",
@@ -38,18 +54,18 @@ router.get("/plans", (req, res) => {
   });
 });
 
-// @route   POST /api/payment/create-order
-// Creates a Razorpay order (time-restricted)
 router.post("/create-order", protect, paymentTimeWindow, async (req, res) => {
   try {
     const { plan } = req.body;
 
     if (!plan || !PLANS[plan]) {
-      return res.status(400).json({ success: false, message: "Invalid plan selected" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid plan selected" });
     }
 
     const planDetails = PLANS[plan];
-    const amountInPaise = planDetails.amount * 100; // Razorpay uses paise
+    const amountInPaise = planDetails.amount * 100;
 
     const order = await razorpay.orders.create({
       amount: amountInPaise,
@@ -80,21 +96,28 @@ router.post("/create-order", protect, paymentTimeWindow, async (req, res) => {
     });
   } catch (error) {
     console.error("Create order error:", error);
-    res.status(500).json({ success: false, message: "Failed to create payment order" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to create payment order" });
   }
 });
 
-// @route   POST /api/payment/verify
-// Verifies Razorpay payment signature and upgrades subscription
 router.post("/verify", protect, async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } =
+      req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !plan) {
-      return res.status(400).json({ success: false, message: "Missing payment details" });
+    if (
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature ||
+      !plan
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing payment details" });
     }
 
-    // Verify signature
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -102,7 +125,12 @@ router.post("/verify", protect, async (req, res) => {
       .digest("hex");
 
     if (expectedSignature !== razorpay_signature) {
-      return res.status(400).json({ success: false, message: "Payment verification failed - Invalid signature" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Payment verification failed - Invalid signature",
+        });
     }
 
     if (!PLANS[plan]) {
@@ -111,7 +139,6 @@ router.post("/verify", protect, async (req, res) => {
 
     const planDetails = PLANS[plan];
 
-    // Update user subscription
     const user = await User.findByIdAndUpdate(
       req.user._id,
       {
@@ -121,12 +148,11 @@ router.post("/verify", protect, async (req, res) => {
         "subscription.endDate": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         "subscription.razorpayOrderId": razorpay_order_id,
         "subscription.razorpayPaymentId": razorpay_payment_id,
-        tweetCount: 0, // Reset tweet count on new subscription
+        tweetCount: 0,
       },
-      { new: true }
+      { new: true },
     );
 
-    // Send invoice email
     const emailResult = await sendSubscriptionInvoice({
       userEmail: user.email,
       userName: user.name,
@@ -145,12 +171,12 @@ router.post("/verify", protect, async (req, res) => {
     });
   } catch (error) {
     console.error("Verify payment error:", error);
-    res.status(500).json({ success: false, message: "Payment verification failed" });
+    res
+      .status(500)
+      .json({ success: false, message: "Payment verification failed" });
   }
 });
 
-// @route   GET /api/payment/subscription
-// Get current user subscription details
 router.get("/subscription", protect, async (req, res) => {
   const user = req.user;
   res.json({

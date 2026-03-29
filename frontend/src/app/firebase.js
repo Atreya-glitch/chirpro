@@ -7,11 +7,13 @@ const firebaseConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 if (!firebaseConfig.apiKey) {
-  console.error("Firebase API Key is missing! Check your .env file and restart the server.");
+  console.error(
+    "Firebase API Key is missing! Check your .env file and restart the server.",
+  );
 }
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);

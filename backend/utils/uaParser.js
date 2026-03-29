@@ -1,13 +1,6 @@
-/**
- * Lightweight User-Agent parser.
- * Returns { browser, browserFamily, os, device, deviceCategory }
- * deviceCategory: "mobile" | "tablet" | "desktop"
- * browserFamily:  "chrome" | "edge" | "ie" | "firefox" | "safari" | "other"
- */
 const parseUserAgent = (ua = "") => {
   const str = ua.toLowerCase();
 
-  // ── Browser detection (order matters — Edge/IE must come before Chrome) ──
   let browser = "Unknown";
   let browserFamily = "other";
 
@@ -31,7 +24,6 @@ const parseUserAgent = (ua = "") => {
     browserFamily = "safari";
   }
 
-  // ── OS detection ──────────────────────────────────────────────────────────
   let os = "Unknown OS";
   if (str.includes("windows nt 10")) os = "Windows 10/11";
   else if (str.includes("windows nt 6.3")) os = "Windows 8.1";
@@ -52,7 +44,6 @@ const parseUserAgent = (ua = "") => {
     os = "Linux";
   }
 
-  // ── Device category ───────────────────────────────────────────────────────
   let deviceCategory = "desktop";
   let device = "Desktop / Laptop";
 
@@ -75,20 +66,14 @@ const parseUserAgent = (ua = "") => {
   return { browser, browserFamily, os, device, deviceCategory };
 };
 
-/**
- * Checks if the current IST time is within the mobile login window (10 AM – 1 PM).
- */
 const isMobileLoginWindowOpen = () => {
   const now = new Date();
   const istOffset = 5.5 * 60 * 60 * 1000;
   const ist = new Date(now.getTime() + istOffset);
   const h = ist.getUTCHours();
-  return h >= 10 && h < 13; // 10:00 AM to 1:00 PM IST
+  return h >= 10 && h < 13;
 };
 
-/**
- * Returns the requester's IP address from the Express request object.
- */
 const getClientIP = (req) => {
   return (
     req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||

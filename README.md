@@ -126,8 +126,8 @@ frontend/src/
 ```
 MONGO_URI=mongodb://localhost:27017/tweetapp
 JWT_SECRET=change_this_secret
-RAZORPAY_KEY_ID=rzp_test_...
-RAZORPAY_KEY_SECRET=...
+RAZORPAY_KEY_ID=rzp_test_SWvw1vD9WCQD2t
+RAZORPAY_KEY_SECRET=6UPCiw8X9MC5m6hxTQRXLXEd
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=you@gmail.com
@@ -142,5 +142,5 @@ PAYMENT_WINDOW_END=11
 ### frontend/.env.local
 ```
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
-NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_...
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_SWvw1vD9WCQD2t
 ```

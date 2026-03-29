@@ -1,19 +1,17 @@
-'use client';
-import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-
+"use client";
+import { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
 const AuthContext = createContext(null);
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken]     = useState(null);
-
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('token');
+    const stored = localStorage.getItem("token");
     if (stored) {
       setToken(stored);
       fetchUser(stored);
@@ -25,12 +23,12 @@ export function AuthProvider({ children }) {
   const fetchUser = async (t) => {
     try {
       const res = await axios.get(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${t}` }
+        headers: { Authorization: `Bearer ${t}` },
       });
       setUser(res.data.user);
     } catch (err) {
       console.error("Fetch user error:", err);
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       setToken(null);
       setUser(null);
     } finally {
@@ -39,15 +37,18 @@ export function AuthProvider({ children }) {
   };
 
   const setUserAndToken = (userData, newToken) => {
-    localStorage.setItem('token', newToken);
+    localStorage.setItem("token", newToken);
     setToken(newToken);
     setUser(userData);
   };
 
   const login = async (email, password) => {
     try {
-      const res = await axios.post(`${API_URL}/auth/login`, { email, password });
-      
+      const res = await axios.post(`${API_URL}/auth/login`, {
+        email,
+        password,
+      });
+
       if (res.data.requiresOtp || res.data.blockedMobile) {
         return res.data;
       }
@@ -72,19 +73,19 @@ export function AuthProvider({ children }) {
 
       const backendUser = res.data.user;
       const backendToken = res.data.token;
-      
+
       setUserAndToken(backendUser, backendToken);
       return { token: backendToken, user: backendUser };
     } catch (backendError) {
-       throw backendError;
+      throw backendError;
     }
   };
 
   const logout = async () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   const refreshUser = async () => {
@@ -94,12 +95,20 @@ export function AuthProvider({ children }) {
   const getAuthHeaders = () => ({ Authorization: `Bearer ${token}` });
 
   return (
-    <AuthContext.Provider value={{
-      user, token, loading,
-      login, register, logout,
-      refreshUser, getAuthHeaders,
-      setUserAndToken, API_URL,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        register,
+        logout,
+        refreshUser,
+        getAuthHeaders,
+        setUserAndToken,
+        API_URL,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -107,6 +116,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }

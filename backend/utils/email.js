@@ -34,7 +34,9 @@ const sendSubscriptionInvoice = async ({
     day: "numeric",
   });
   const invoiceNumber = `INV-${Date.now()}`;
-  const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", {
+  const expiryDate = new Date(
+    Date.now() + 30 * 24 * 60 * 60 * 1000,
+  ).toLocaleDateString("en-IN", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -149,15 +151,14 @@ const sendSubscriptionInvoice = async ({
   }
 };
 
-
-/**
- * Sends a password reset email containing the new generated password.
- */
 const sendPasswordResetEmail = async ({ userEmail, userName, newPassword }) => {
   const transporter = createTransporter();
   const resetDate = new Date().toLocaleString("en-IN", {
-    year: "numeric", month: "long", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   const htmlContent = `
@@ -236,16 +237,21 @@ const sendPasswordResetEmail = async ({ userEmail, userName, newPassword }) => {
   }
 };
 
-// Re-export everything
-
-/**
- * Sends a 6-digit OTP email for Chrome login verification.
- */
-const sendOtpEmail = async ({ userEmail, userName, otp, ipAddress, browser, device }) => {
+const sendOtpEmail = async ({
+  userEmail,
+  userName,
+  otp,
+  ipAddress,
+  browser,
+  device,
+}) => {
   const transporter = createTransporter();
   const sentAt = new Date().toLocaleString("en-IN", {
-    year: "numeric", month: "long", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   const htmlContent = `
@@ -322,16 +328,14 @@ const sendOtpEmail = async ({ userEmail, userName, otp, ipAddress, browser, devi
   }
 };
 
-// Final consolidated export
-
-/**
- * Sends a 6-digit OTP specifically for authorising an audio tweet upload.
- */
 const sendAudioUploadOtpEmail = async ({ userEmail, userName, otp }) => {
   const transporter = createTransporter();
   const sentAt = new Date().toLocaleString("en-IN", {
-    year: "numeric", month: "long", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   const html = `
@@ -408,4 +412,9 @@ const sendAudioUploadOtpEmail = async ({ userEmail, userName, otp }) => {
   }
 };
 
-module.exports = { sendSubscriptionInvoice, sendPasswordResetEmail, sendOtpEmail, sendAudioUploadOtpEmail };
+module.exports = {
+  sendSubscriptionInvoice,
+  sendPasswordResetEmail,
+  sendOtpEmail,
+  sendAudioUploadOtpEmail,
+};
