@@ -64,7 +64,7 @@ export function TweetComposer({ onTweetCreated }: { onTweetCreated: () => void }
 
   const performFinalPost = (type: 'text' | 'audio') => {
     const store = getStore();
-    checkTweetForNotification(content);
+   checkTweetForNotification({ id: Date.now(), content });
     const tweets = JSON.parse(localStorage.getItem('chirppro_tweets') || '[]');
     const newTweet = {
       id: Date.now(),

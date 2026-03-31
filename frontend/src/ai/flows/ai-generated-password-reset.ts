@@ -1,11 +1,4 @@
 'use server';
-/**
- * @fileOverview This file defines a Genkit flow for generating a secure, random password.
- *
- * - generatePassword - A function that triggers the password generation flow.
- * - GeneratePasswordInput - The input type for the generatePassword function (currently empty).
- * - GeneratePasswordOutput - The return type for the generatePassword function, containing the generated password.
- */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';

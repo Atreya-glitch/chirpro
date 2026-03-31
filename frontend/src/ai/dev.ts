@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/ai-generated-password-reset.ts';
-import '@/ai/flows/send-subscription-email.ts';
+import '@/ai/flows/ai-generated-password-reset';
+import '@/ai/flows/send-subscription-email';
