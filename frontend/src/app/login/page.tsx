@@ -19,7 +19,6 @@ export default function LoginPage() {
     e.preventDefault();
     const { browser, isMobile } = getBrowserInfo();
 
-    // Mobile restriction: 10 AM - 1 PM IST
     if (isMobile && !isTimeInRange(10, 13)) {
       toast({
         title: "Access Restricted",
@@ -29,7 +28,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Google Chrome requires Email OTP
     if (browser === 'Google Chrome') {
       toast({ 
         title: "Identity Verification", 
@@ -39,15 +37,13 @@ export default function LoginPage() {
       return;
     }
 
-    // Microsoft Edge (or other MS browsers) allowed to log in directly
     if (browser === 'Microsoft Edge') {
-      addLoginHistory(); // Simulated direct login
+      addLoginHistory(); 
       toast({ title: "Welcome Back!", description: "Edge browser recognized. Logged in successfully." });
       router.push('/');
       return;
     }
 
-    // Default: Log in directly for other browsers for now
     addLoginHistory();
     toast({ title: "Welcome!", description: "You have been logged in." });
     router.push('/');

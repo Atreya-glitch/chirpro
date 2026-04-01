@@ -24,7 +24,7 @@ function VerifyLangContent() {
   const MethodIcon = isFrench ? Mail : Smartphone;
 
   const handleVerify = () => {
-    // Demo OTP: 123456
+    
     if (otp === "123456") {
       updateStore({ language: lang });
       toast({ 

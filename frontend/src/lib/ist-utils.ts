@@ -19,7 +19,7 @@ export function getSubscriptionLimits(plan: string): number {
     case 'bronze': return 3;
     case 'silver': return 5;
     case 'gold': return Infinity;
-    default: return 1; // Free
+    default: return 1; 
   }
 }
 
@@ -42,8 +42,7 @@ export function getBrowserInfo(): { browser: string; os: string; isMobile: boole
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   
   let deviceType: 'desktop' | 'laptop' | 'mobile' = isMobile ? 'mobile' : 'desktop';
-  
-  // Heuristic for laptop vs desktop based on screen resolution
+
   if (!isMobile) {
     const screenWidth = window.screen.width;
     if (screenWidth >= 1024 && screenWidth <= 1600) {

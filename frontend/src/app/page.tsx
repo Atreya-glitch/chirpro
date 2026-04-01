@@ -23,12 +23,11 @@ export default function Home() {
 
   useEffect(() => {
     loadTweets();
-    // Refresh tweets every 5 seconds to show updates across tabs
+    
     const interval = setInterval(loadTweets, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Trigger notifications when new matching tweets appear in the feed
   useEffect(() => {
     if (tweets.length > 0) {
       checkFeedForNotifications(tweets);

@@ -17,7 +17,7 @@ function VerifyOtpContent() {
   const router = useRouter();
 
   const handleVerify = () => {
-    // Simulated OTP verification
+    
     if (otp === "123456") {
       addLoginHistory();
       toast({ title: "Verified!", description: "Welcome to ChirpPro." });

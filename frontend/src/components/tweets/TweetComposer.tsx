@@ -43,7 +43,7 @@ export function TweetComposer({ onTweetCreated }: { onTweetCreated: () => void }
     }
 
     if (audioFile) {
-      // Audio Tweeting Window: 2:00 PM - 7:00 PM IST
+      
       if (!isTimeInRange(14, 19)) {
         toast({
           title: "Audio Posting Restricted",
@@ -52,13 +52,11 @@ export function TweetComposer({ onTweetCreated }: { onTweetCreated: () => void }
         });
         return;
       }
-      
-      // Open OTP Dialog before final post
+
       setShowOTP(true);
       return;
     }
 
-    // Regular Text Tweet
     performFinalPost('text');
   };
 
@@ -85,7 +83,7 @@ export function TweetComposer({ onTweetCreated }: { onTweetCreated: () => void }
   const handleVerifyOTP = () => {
     if (otp === "123456") {
       setIsVerifying(true);
-      // Simulate verification processing
+      
       setTimeout(() => {
         performFinalPost('audio');
         setShowOTP(false);
@@ -104,7 +102,7 @@ export function TweetComposer({ onTweetCreated }: { onTweetCreated: () => void }
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // 100MB Limit
+      
       if (file.size > 100 * 1024 * 1024) {
         toast({ 
           title: "File Too Large", 
@@ -113,8 +111,7 @@ export function TweetComposer({ onTweetCreated }: { onTweetCreated: () => void }
         });
         return;
       }
-      
-      // Check time window early for UX
+
       if (!isTimeInRange(14, 19)) {
         toast({
           title: "Outside Posting Window",

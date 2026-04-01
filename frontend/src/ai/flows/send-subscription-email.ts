@@ -1,11 +1,4 @@
 'use server';
-/**
- * @fileOverview This file defines a Genkit flow for generating a subscription invoice email.
- *
- * - sendSubscriptionEmail - A function that simulates sending a subscription confirmation email.
- * - SubscriptionEmailInput - The input type containing plan details and user email.
- * - SubscriptionEmailOutput - The return type containing the generated email body.
- */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
@@ -58,7 +51,7 @@ const sendSubscriptionEmailFlow = ai.defineFlow(
     if (!output) {
       throw new Error('Failed to generate subscription email.');
     }
-    // In a real app, this is where you'd call an email API like SendGrid or Resend.
+    
     return output;
   }
 );

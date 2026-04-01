@@ -54,11 +54,11 @@ export default function SubscriptionPage() {
     const load = () => {
       const store = getStore();
       setCurrentPlan(store.subscription);
-      // Payment window: 10:00 AM - 11:00 AM IST
+      
       setIsPayWindow(isTimeInRange(10, 11));
     };
     load();
-    const interval = setInterval(load, 30000); // Check window every 30s
+    const interval = setInterval(load, 30000); 
     window.addEventListener('storage', load);
     return () => {
       window.removeEventListener('storage', load);
@@ -82,12 +82,10 @@ export default function SubscriptionPage() {
     try {
       const store = getStore();
       const transactionId = `TXN-${Math.random().toString(36).toUpperCase().substring(2, 10)}`;
-      
-      // Update local state
+
       updateStore({ subscription: plan.name as Plan });
       setCurrentPlan(plan.name as Plan);
 
-      // Trigger AI simulated email
       const emailResult = await sendSubscriptionEmail({
         email: store.email,
         planName: plan.name,
