@@ -9,13 +9,92 @@ import { Label } from "@/components/ui/label";
 import { History, Shield, Smartphone, Monitor, Laptop, BellRing, Globe, Mail, Phone } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/hooks/use-toast";
+
+const LANGUAGES = [
+  { name: 'English', flag: '🇺🇸' },
+  { name: 'Spanish', flag: '🇪🇸' },
+  { name: 'French', flag: '🇫🇷' },
+  { name: 'Hindi', flag: '🇮🇳' },
+  { name: 'Portuguese', flag: '🇵🇹' },
+  { name: 'Chinese', flag: '🇨🇳' }
+];
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserState | null>(null);
+  const [isLangModalOpen, setIsLangModalOpen] = useState(false);
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [selectedLang, setSelectedLang] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSession, setOtpSession] = useState<{ sessionId: string; method: string; target: string } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setUser(getStore());
   }, []);
+
+  const handleLanguageSelect = async (lang: string) => {
+    if (lang === user?.language) {
+      setIsLangModalOpen(false);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/language/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: lang }),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setOtpSession({ sessionId: data.sessionId, method: data.method, target: data.target });
+        setSelectedLang(lang);
+        setIsLangModalOpen(false);
+        setIsOtpModalOpen(true);
+        if (data.simulatedOtp) {
+          toast({ title: "SIMULATION", description: `Mobile OTP: ${data.simulatedOtp}` });
+        }
+      } else {
+        toast({ title: "Error", description: data.message, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Connection failed", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!otpSession) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/language/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: otpSession.sessionId, otp }),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        updateStore({ language: data.language });
+        setUser(prev => prev ? { ...prev, language: data.language } : null);
+        setIsOtpModalOpen(false);
+        setOtp('');
+        toast({ title: "Success", description: `Language changed to ${data.language}` });
+      } else {
+        toast({ title: "Error", description: data.message, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Verification failed", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleNotifications = (val: boolean) => {
     updateStore({ notificationsEnabled: val });
@@ -82,12 +161,74 @@ export default function ProfilePage() {
             <div className="pt-4 border-t border-border flex justify-between items-center">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Primary Locale</p>
-                <p className="text-2xl font-black text-accent">{user.language}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-black text-accent">{user.language}</p>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] uppercase font-bold text-primary hover:bg-primary/10" onClick={() => setIsLangModalOpen(true)}>
+                    Change
+                  </Button>
+                </div>
               </div>
               <Globe className="w-10 h-10 text-accent/20" />
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={isLangModalOpen} onOpenChange={setIsLangModalOpen}>
+          <DialogContent className="rounded-[2rem] border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">Select Language</DialogTitle>
+              <DialogDescription>
+                Changing your language requires a security verification code.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-3 py-4">
+              {LANGUAGES.map((lang) => (
+                <Button
+                  key={lang.name}
+                  variant={user.language === lang.name ? "default" : "outline"}
+                  className="h-16 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all hover:scale-[1.02]"
+                  onClick={() => handleLanguageSelect(lang.name)}
+                  disabled={loading}
+                >
+                  <span className="text-2xl">{lang.flag}</span>
+                  <span className="text-xs font-bold">{lang.name}</span>
+                </Button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isOtpModalOpen} onOpenChange={setIsOtpModalOpen}>
+          <DialogContent className="rounded-[2rem] border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">Verify Identity</DialogTitle>
+              <DialogDescription>
+                We've sent a 6-digit code to your {otpSession?.method === 'email' ? 'email' : 'mobile'}: 
+                <strong className="block text-foreground mt-1">{otpSession?.target}</strong>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-6 space-y-4">
+              <Input
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="h-16 text-center text-3xl font-black tracking-[1rem] rounded-2xl border-2 focus-visible:ring-primary"
+              />
+              <Button 
+                className="w-full h-14 rounded-2xl bg-primary text-lg font-bold shadow-lg shadow-primary/20" 
+                onClick={verifyOtp}
+                disabled={otp.length !== 6 || loading}
+              >
+                {loading ? "Verifying..." : "Confirm Language Switch"}
+              </Button>
+            </div>
+            <DialogFooter className="sm:justify-center">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                Security Policy: OTP valid for 10 minutes
+              </p>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Card className="border-none shadow-lg ring-1 ring-border rounded-[2rem]">
           <CardHeader>

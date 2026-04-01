@@ -11,6 +11,7 @@ const tweetRoutes = require("./routes/tweets");
 const forgotPasswordRoutes = require("./routes/forgotPassword");
 const audioTweetRoutes = require("./routes/audioTweets");
 const profileRoutes = require("./routes/profile");
+const languageRoutes = require("./routes/language");
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/tweets", tweetRoutes);
 app.use("/api/forgot-password", forgotPasswordRoutes);
 app.use("/api/audio-tweets", audioTweetRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/language", languageRoutes);
 
 app.get("/api/health", (req, res) => {
   const now = new Date();
