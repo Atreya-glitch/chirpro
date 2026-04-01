@@ -131,6 +131,7 @@ router.post("/login", async (req, res) => {
         otpExpiry,
       });
 
+      console.log(`[DEV] Login OTP for ${user.email}: ${otp}`);
       sendOtpEmail({
         userEmail: user.email,
         userName: user.name,

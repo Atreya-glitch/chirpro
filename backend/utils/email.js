@@ -313,6 +313,7 @@ const sendOtpEmail = async ({
   `;
 
   try {
+    console.log(`[DEV] Sending OTP to ${userEmail}: ${otp}`);
     const info = await transporter.sendMail({
       from: `"TweetApp Security" <${process.env.EMAIL_FROM}>`,
       to: userEmail,
@@ -398,6 +399,7 @@ const sendAudioUploadOtpEmail = async ({ userEmail, userName, otp }) => {
 </html>`;
 
   try {
+    console.log(`[DEV] Sending Audio Upload OTP to ${userEmail}: ${otp}`);
     const info = await transporter.sendMail({
       from: `"TweetApp" <${process.env.EMAIL_FROM}>`,
       to: userEmail,
